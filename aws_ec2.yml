@@ -1,0 +1,15 @@
+plugin: amazon.aws.aws_ec2
+regions:
+  - eu-central-1
+filters:
+  instance-state-name: running
+  tag:Name: ubuntu-instance
+hostnames:
+  - ip-address
+keyed_groups:
+  - key: tags.Name
+    prefix: tag_Name
+    separator: "_"
+compose:
+  ansible_user: ubuntu
+  ansible_host: public_ip_address|default(private_ip_address)

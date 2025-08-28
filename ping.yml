@@ -1,0 +1,6 @@
+- name: Ping dynamic inventory
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Ping hosts
+      ansible.builtin.ping:

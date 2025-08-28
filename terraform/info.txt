@@ -1,0 +1,5 @@
+ssh-keygen -t rsa -b 4096 -f ~/.ssh/ssh-key-servers.pem
+create an ssh key with name which i want and the public key also for using on future
+
+connecting to ec2
+ssh -i ~/.ssh/ssh-key-servers.pem ubuntu@<ubuntu-public-ip>

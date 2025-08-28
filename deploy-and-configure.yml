@@ -1,0 +1,53 @@
+---
+- name: Run Terraform to provision infrastructure
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  tasks:
+    - name: Initialize and plan Terraform
+      terraform:
+        project_path: '{{ playbook_dir }}/terraform/'  # Use absolute path
+        force_init: yes
+        plan_file: '{{ playbook_dir }}/terraform/terraform.tfplan'
+      register: tf_plan
+      ignore_errors: yes  # Continue even if plan fails
+
+    - name: Debug Terraform plan output
+      debug:
+        var: tf_plan
+      when: tf_plan is defined
+
+    - name: Apply Terraform configuration
+      terraform:
+        project_path: '{{ playbook_dir }}/terraform/'
+        lock: true
+        state: present
+        plan_file: '{{ playbook_dir }}/terraform/terraform.tfplan'
+      when: tf_plan is defined and tf_plan.failed is not defined
+      register: tf_apply
+
+    - name: Capture Terraform outputs
+      terraform:
+        project_path: '{{ playbook_dir }}/terraform/'
+        state: present
+        output: yes
+      register: tf_outputs
+      when: tf_apply is defined and tf_apply.changed
+
+    - name: Add provisioned hosts to in-memory inventory
+      add_host:
+        name: "{{ item }}"
+        groups: ubuntu
+      loop: "{{ tf_outputs.stdout | from_json | json_query('instance_ips.value') }}"
+      when: tf_outputs.stdout is defined
+      delegate_to: localhost
+
+- name: Configure provisioned Ubuntu hosts
+  hosts: ubuntu
+  tasks:
+    - name: Test connectivity to Ubuntu hosts
+      ping:
+      retries: 3
+      delay: 5
+      register: ping_result
+      until: ping_result is success
